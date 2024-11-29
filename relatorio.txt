@@ -1,0 +1,8 @@
+Saída:
+Seu programa deverá indicar os números mínimos de caminhões de lixo e funcionários necessários para recolher todo o lixo do bairro dentro de 8 horas.
+
+Número mínimo de caminhões: 1
+Número mínimo de funcionários: 3
+Número de carrocinhas necessárias: 2
+Total de lixo coletado: 0.00 m³
+Total de animais recolhidos: 7
