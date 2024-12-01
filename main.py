@@ -101,34 +101,79 @@ def dijkstra(pontos, inicio):
 
     return dist
 
-def movimentar_animais(pontos):
+def movimentar_animais(pontos, carrocinhas, linha_do_tempo_global, tempo_atual):
     for ponto in pontos:
         for animal in ["gatos", "cachorros"]:
             if ponto.animais[animal]:
-                destino_id = random.choice([vizinho for vizinho, _ in ponto.conexoes])
-                destino_ponto = next(p for p in pontos if p.id == destino_id)
-                destino_ponto.animais[animal] += 1
-                ponto.animais[animal] -= 1
+                carrocinha_disponivel = next((c for c in carrocinhas if c.animais < c.capacidade), None)
+                if carrocinha_disponivel:
+                    carrocinha_disponivel.recolher_animal(animal, ponto.id, tempo_atual)
+                    linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {carrocinha_disponivel.id} recolheu um {animal} no ponto {ponto.id}.")
+                    ponto.animais[animal] -= 1
 
-def executar_coleta(pontos, caminhoes, carrocinhas, tempo_maximo):
+def executar_coleta_simultanea(pontos, caminhoes, carrocinhas, aterro_id, zoonoses_id, tempo_maximo):
     tempo_atual = 0
-    
+    linha_do_tempo_global = []
+
     while tempo_atual < tempo_maximo:
+        
+        all_collected = all(p.lixo == 0 for p in pontos)
+
         for caminhao in caminhoes:
             for ponto in pontos:
-                if tempo_atual >= tempo_maximo:
-                    break
+                if ponto.lixo > 0:
+                    all_collected = False
+                    tempo_gasto_coleta = caminhao.coleta(ponto, tempo_atual)
+                    linha_do_tempo_global.append(f"[{tempo_atual} min] Caminhão {caminhao.id} recolheu lixo no ponto {ponto.id}.")
+                    tempo_atual += tempo_gasto_coleta
                 
-                # Coleta de lixo
-                tempo_gasto_coleta = caminhao.coleta(ponto, tempo_atual)
-                tempo_atual += tempo_gasto_coleta
-                
-                # Movimentação e coleta de animais
-                movimentar_animais(pontos)
+                while caminhao.volume_atual > caminhao.capacidade and caminhao.compactacoes < 3:
+                    caminhao.compactar()
+                    linha_do_tempo_global.append(f"[{tempo_atual} min] Caminhão {caminhao.id} compactou o lixo.")
+                    tempo_atual += dijkstra(pontos, caminhao.id)[aterro_id]
+
+                if caminhao.volume_atual >= caminhao.capacidade and caminhao.compactacoes == 3:
+                    linha_do_tempo_global.append(f"[{tempo_atual} min] Caminhão {caminhao.id} indo para o aterro.")
+                    tempo_atual += dijkstra(pontos, caminhao.id)[aterro_id]
+                    caminhao.descarregar(tempo_atual)
+                    linha_do_tempo_global.append(f"[{tempo_atual} min] Caminhão {caminhao.id} descarregou no aterro.")
+
+                movimentar_animais(pontos, carrocinhas, linha_do_tempo_global, tempo_atual)
+
+                if all_collected or tempo_atual >= tempo_maximo:
+                    return linha_do_tempo_global
+    
+    return linha_do_tempo_global
+
+def calcular_recursos_minimos(pontos, tempo_maximo=8*60):
+    capacidade_caminhao = 10
+    funcionarios_por_caminhao = 5
+    capacidade_carrocinha = 5
+
+    total_lixo = sum(p.lixo for p in pontos)
+    total_animais = sum(any(p.animais.values()) for p in pontos)
+
+    caminhoes_necessarios = max(1, int(np.ceil(total_lixo / capacidade_caminhao)))
+
+    tempo_total_coleta = sum(int(np.ceil(p.lixo / funcionarios_por_caminhao)) * (2 if any(p.animais.values()) else 1) for p in pontos)
+
+    if tempo_total_coleta > tempo_maximo:
+        caminhoes_necessarios = max(caminhoes_necessarios, int(np.ceil(tempo_total_coleta / tempo_maximo)))
+    
+    funcionarios_necessarios = caminhoes_necessarios * funcionarios_por_caminhao
+
+    carrocinhas_necessarias = max(1, int(np.ceil(total_animais / capacidade_carrocinha)))
+
+    return caminhoes_necessarios, funcionarios_necessarios, carrocinhas_necessarias
 
 def main():
     with open("entrada.txt", "r") as f:
         num_pontos = int(f.readline().strip())
+        
+        # Ler IDs do aterro e do centro de zoonoses
+        aterro_id = int(f.readline().strip())
+        zoonoses_id = int(f.readline().strip())
+
         pontos = []
 
         for i in range(num_pontos):
@@ -142,43 +187,18 @@ def main():
     for ponto in pontos:
         ponto.atualizar_animais()
 
-    caminhoes_necessarios, funcionarios_necessarios_por_caminhao = calcular_caminhao_minimo(pontos)
+    caminhoes_necessarios, funcionarios_necessarios, carrocinhas_necessarias = calcular_recursos_minimos(pontos)
+
+    caminhoes = [CaminhaoDeLixo(i, 10, funcionarios_necessarios // caminhoes_necessarios) for i in range(caminhoes_necessarios)]
     
-    caminhoes = [CaminhaoDeLixo(i, 10, funcionarios_necessarios_por_caminhao) for i in range(caminhoes_necessarios)]
-    
-    carrocinhas_necessarias = max(1, len([p for p in pontos if any(p.animais.values())]) // 5)
     carrocinhas = [Carrocinha(i, 5) for i in range(carrocinhas_necessarias)]
 
     tempo_maximo = 8 * 60 
-    executar_coleta(pontos, caminhoes, carrocinhas, tempo_maximo)
+    linha_do_tempo_global = executar_coleta_simultanea(pontos, caminhoes, carrocinhas, aterro_id, zoonoses_id, tempo_maximo)
 
-    for caminhao in caminhoes:
-        print(f"=== Linha do Tempo do Caminhão {caminhao.id} ===")
-        for evento in caminhao.linha_do_tempo:
-            print(evento)
-    
-    for carrocinha in carrocinhas:
-        print(f"=== Linha do Tempo da Carrocinha {carrocinha.id} ===")
-        for evento in carrocinha.linha_do_tempo:
-            print(evento)
-
-def calcular_caminhao_minimo(pontos):
-    total_lixo_array = np.array([p.lixo for p in pontos])
-    
-    capacidade_caminhao_por_dia_array = np.full(total_lixo_array.shape,
-                                                fill_value=10 * (8 * (60 / (total_lixo_array.mean()))))
-    
-    caminhoes_necessarios_array = np.ceil(total_lixo_array / capacidade_caminhao_por_dia_array).astype(int)
-    
-    caminhoes_necessarios_total = caminhoes_necessarios_array.max()
-    
-    funcionarios_necessarios_por_caminhao_total = max(3,
-                                                      min(5,
-                                                          np.ceil(total_lixo_array.sum() /
-                                                                 (capacidade_caminhao_por_dia_array.sum() *
-                                                                  caminhoes_necessarios_total)).astype(int)))
-    
-    return caminhoes_necessarios_total, funcionarios_necessarios_por_caminhao_total * caminhoes_necessarios_total
+    print("=== Linha do Tempo Global ===")
+    for evento in linha_do_tempo_global:
+        print(evento)
 
 if __name__ == "__main__":
     main()

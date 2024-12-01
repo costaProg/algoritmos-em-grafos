@@ -1,0 +1,12 @@
+Explicação do Exemplo
+Primeira Linha (6): Existem seis pontos no total.
+Segunda Linha (4): O ponto ID 4 é o aterro sanitário.
+Terceira Linha (5): O ponto ID 5 é o centro de zoonoses.
+Linhas dos Pontos:
+Linha 10 1 5 2 10: Ponto 0 tem 10 m³ de lixo, conectado ao ponto 1 com custo 5 e ao ponto 2 com custo 10.
+Linha 15 0 5 3 8: Ponto 1 tem 15 m³ de lixo, conectado ao ponto 0 com custo 5 e ao ponto 3 com custo 8.
+Linha 20 0 10 4 7: Ponto 2 tem 20 m³ de lixo, conectado ao ponto 0 com custo 10 e ao aterro sanitário (ponto 4) com custo 7.
+Linha 25 1 8 5 12: Ponto 3 tem 25 m³ de lixo, conectado ao ponto 1 com custo 8 e ao centro de zoonoses (ponto 5) com custo 12.
+Linhas do Aterro e Zoonoses:
+Linha para o Aterro (0): Não há lixo a ser coletado aqui.
+Linha para Zoonoses (0): Não há lixo a ser coletado aqui.

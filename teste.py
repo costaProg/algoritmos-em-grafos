@@ -11,10 +11,9 @@ class PontoDeColeta:
         self.animais = {"ratos": 0, "gatos": 0, "cachorros": 0}
 
     def atualizar_animais(self):
-        """Atualiza os animais no ponto de coleta."""
-        self.animais["ratos"] = random.randint(0, 5)  # Ratos aleatórios
-        self.animais["gatos"] = random.randint(0, 2)  # Gatos aleatórios
-        self.animais["cachorros"] = random.randint(0, 1)  # Cachorros aleatórios
+        self.animais["ratos"] = random.random() < 0.5
+        self.animais["gatos"] = random.random() < 0.25
+        self.animais["cachorros"] = random.random() < 0.1
 
     def mover_animais(self, pontos):
         """Realiza a movimentação dos animais entre os pontos de coleta."""
