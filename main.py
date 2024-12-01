@@ -48,12 +48,18 @@ class Carrocinha:
         self.capacidade = capacidade
         self.animais = 0
 
-    def recolher_animal(self, animal):
+    def recolher_animal(self, animal, ponto_id, tempo_atual, linha_do_tempo_global):
         if self.animais < self.capacidade:
             self.animais += 1
+            linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {self.id} recolheu um {animal} no ponto {ponto_id}. Total de animais: {self.animais}.")
 
-    def descarregar(self):
+    def descarregar(self, tempo_atual, zoonoses_id, linha_do_tempo_global):
         if self.animais > 0:
+            linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {self.id} indo para o centro de zoonoses.")
+            # Simula o tempo de deslocamento até o centro de zoonoses.
+            tempo_ate_zoonoses = dijkstra(pontos, zoonoses_id)[zoonoses_id]
+            tempo_atual += tempo_ate_zoonoses
+            linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {self.id} descarregou {self.animais} animais no abrigo.")
             self.animais = 0
 
 def dijkstra(pontos, inicio):
@@ -127,6 +133,15 @@ def executar_coleta_simultanea(pontos, caminhoes, carrocinhas, aterro_id, zoonos
                     linha_do_tempo_global.append(f"[{tempo_atual} min] Caminhão {caminhao.id} descarregou no aterro.")
 
                 movimentar_animais(pontos, carrocinhas, linha_do_tempo_global, tempo_atual)
+
+                # Notificar carrocinhas se houver animais a serem recolhidos
+                for animal in ["gatos", "cachorros"]:
+                    if ponto.animais[animal]:
+                        carrocinha_disponivel = next((c for c in carrocinhas if c.animais < c.capacidade), None)
+                        if carrocinha_disponivel:
+                            carrocinha_disponivel.recolher_animal(animal, ponto.id, tempo_atual, linha_do_tempo_global)
+                            if carrocinha_disponivel.animais >= carrocinha_disponivel.capacidade:
+                                carrocinha_disponivel.descarregar(tempo_atual, zoonoses_id, linha_do_tempo_global)
 
                 if all_collected or tempo_atual >= tempo_maximo:
                     return linha_do_tempo_global
