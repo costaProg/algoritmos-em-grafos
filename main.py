@@ -53,7 +53,7 @@ class Carrocinha:
             self.animais += 1
             linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {self.id} recolheu um {animal} no ponto {ponto_id}. Total de animais: {self.animais}.")
 
-    def descarregar(self, tempo_atual, zoonoses_id, linha_do_tempo_global):
+    def descarregar(self, tempo_atual, zoonoses_id, linha_do_tempo_global, pontos):
         if self.animais > 0:
             linha_do_tempo_global.append(f"[{tempo_atual} min] Carrocinha {self.id} indo para o centro de zoonoses.")
             # Simula o tempo de deslocamento até o centro de zoonoses.
@@ -141,7 +141,7 @@ def executar_coleta_simultanea(pontos, caminhoes, carrocinhas, aterro_id, zoonos
                         if carrocinha_disponivel:
                             carrocinha_disponivel.recolher_animal(animal, ponto.id, tempo_atual, linha_do_tempo_global)
                             if carrocinha_disponivel.animais >= carrocinha_disponivel.capacidade:
-                                carrocinha_disponivel.descarregar(tempo_atual, zoonoses_id, linha_do_tempo_global)
+                                carrocinha_disponivel.descarregar(tempo_atual, zoonoses_id, linha_do_tempo_global, pontos)
 
                 if all_collected or tempo_atual >= tempo_maximo:
                     return linha_do_tempo_global
